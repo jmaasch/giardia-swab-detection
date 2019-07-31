@@ -1,0 +1,834 @@
+---
+title: "Giardia rectal swab analysis"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+Setup.
+```{r setup, message=FALSE, warning=FALSE}
+#Install packages
+#install.packages("xtable", repos="http://cran.us.r-project.org")
+#install.packages("scales", repos="http://cran.us.r-project.org")
+#install.packages("bazar", repos="http://cran.us.r-project.org")
+#install.packages("gmodels", repos="http://cran.us.r-project.org")
+#install.packages("stargazer", repos="http://cran.us.r-project.org")
+#install.packages("cowplot", repos="http://cran.us.r-project.org")
+
+#Load packages
+library(tidyverse)
+library(lubridate)
+library(epiR)
+library(xtable)
+library(scales)
+library(bazar) #sumNA function
+library(gmodels)
+library(stargazer)
+library(cowplot)
+library(ggthemes)
+
+#Color palette
+library(RColorBrewer)
+#display.brewer.pal(9, name="BrBG")
+BrBG6 <- c("#8C510A" ,"#BF812D", "#DFC27D", "#80CDC1", "#35978F", "#01665E")
+BrBG5 <- c("#8C510A" ,"#BF812D", "#DFC27D", "#35978F", "#01665E")
+BrBG4_brown <- c("#f6e8c3", "#dfc27d", "#bf812d", "#8c510a")
+BrBG4_turq <- c("#c7eae5", "#80cdc1", "#35978f", "#01665e")
+BrBG4_turq_dark <- c("#80cdc1", "#35978f", "#01665e", "#003c30")
+BrBG2 <- c("#003c30", "#35978f")
+
+
+#Working directorories (set one to comment depending on who is working on the file)
+#Kristen: 
+#setwd("~/Dropbox/_Papers/Rectal swab STH/Analysis/")
+
+#Jacqueline
+setwd("/Users/razel/Dropbox/Rectal swab STH/Analysis/")
+
+```
+
+Load data. Merging was done in Stata.
+```{r data}
+
+d <- (read.csv("DataPrep/GiardiaPCRStoolRectalMerged_03.04.19.csv") %>%
+        mutate(dob_mcd = as.Date(dob_mcd, "%m/%d/%Y"),
+               visitdate = as.Date(appcreateddatess, "%m/%d/%Y"),
+               ageM = as.numeric(floor((visitdate - dob_mcd)/30)),
+               ageY = as.numeric(floor((visitdate - dob_mcd)/365)),
+               bsfs1 = fct_recode(sampleconsistencygrader1, "Loose" = "Fluffy With Ragged Edges", 
+                                  "Smooth" = "Smooth Soft", "Pellet" = "Separate Hard Lumps"),
+               bsfs1 = fct_relevel(bsfs1, "Watery", "Loose", "Smooth", "Lumpy", "Pellet"),
+               loosewat1 = fct_collapse(bsfs1,
+                                       "loose/watery" = c("Watery", "Loose"),
+                                       "formed" = c("Lumpy", "Pellet", "Smooth"))) %>%
+        select(- visiblestoolonswab1, -visiblestoolonswab2, -moisturein15mltube1, -moisturein15mltube2) %>%
+        rename(gender = genderes, visiblestoolonswab1=visiblestoolonswab3, visiblestoolonswab2 = visiblestoolonswab4, 
+               moisturein15mltube1=moisturein15mltube3, moisturein15mltube2=moisturein15mltube4, ctstool1 = ctmean1, 
+               ctstool2 = ctmean2, ctrectal1 = ctmean3, ctrectal2 = ctmean4, vilID = villageeswuha)
+               ) %>%
+        mutate(condensation = ifelse(moisturein15mltube1=="Yes", 1, 0)) %>%
+        rowwise() %>%
+          mutate(eitherStoolPos = sumNA(stool1_pos, stool2_pos, na.rm = T),
+                 eitherStoolPos = ifelse(eitherStoolPos >1, 1, eitherStoolPos),
+                 eitherRectalPos = sumNA(rectal1_pos, rectal2_pos, na.rm = T), 
+                 eitherRectalPos = ifelse(eitherRectalPos >1, 1, eitherRectalPos),
+                 truePos = sumNA(stool1_pos, stool2_pos, rectal1_pos, rectal2_pos, na.rm = T), 
+                 truePos = ifelse(truePos > 1, 1, truePos)
+                 )
+
+#Remove data points with low IAC values
+d <- d %>%
+  filter(stool1_ID != 491170 & stool1_ID != 460864)
+
+#Mean CT
+d <- d %>%
+  mutate(ctstoolMax = max(ctstool1, ctstool2, na.rm=T),
+         ctstoolMax = ifelse(is.na(ctstool1) & is.na(ctstool2), NA, ctstoolMax),
+         ctstoolMean = mean(c(ctstool1, ctstool2)),
+         #if only 1 ct value, replace mean with max of that value
+         ctstoolMean = ifelse(is.na(ctstoolMean), ctstoolMax, ctstoolMean)
+         )
+```
+
+Intra-test reliability (kappa statistics).
+```{r reliability}
+#Reliability Stool vs. stool
+############################
+#Step 1: create a confusion matrix
+tab1 <- xtabs(~stool2_pos + stool1_pos, data=d)
+tab1
+
+#Step 2: reverse column order
+tab1 <- tab1[ 2:1, 2:1]
+
+#Step 3: use the epi test command to calculate sensitivity and specificity
+epi.kappa(tab1)
+
+
+#Reliability Swab vs. swab
+############################
+#Step 1: create a confusion matrix
+tab2 <- xtabs(~rectal2_pos + rectal1_pos, data=d)
+tab2
+
+#Step 2: reverse column order
+tab2 <- tab2[ 2:1, 2:1]
+
+#Step 3: use the epi test command to calculate sensitivity and specificity
+epi.kappa(tab2)
+
+#all positives
+tab3 <- xtabs(~eitherRectalPos + eitherStoolPos, data=d)
+tab3 <- tab3[ 2:1, 2:1]
+tab3 
+epi.kappa(tab3)
+```
+
+Positive / negative agreement of qPCR outcomes for DNA isolated from rectal swabs and bulk stool. 
+```{r agreement, results = "asis"}
+#################################
+# (+/-) Agreement tables
+#################################
+
+#ALL SWABS VS ALL STOOL
+AgreementTab  <- addmargins(table(d$eitherRectalPos, d$eitherStoolPos, dnn=c("Rectal Swab","Bulk Stool Sample")))
+colnames(AgreementTab) <- c( "Stool --", "Stool +", "Total")
+rownames(AgreementTab) <- c( "Swab --", "Swab +", "Total")
+AgreementTab 
+
+print(xtable(AgreementTab), include.rownames=TRUE, booktabs = TRUE)
+
+#In stargazer
+agree <- as.data.frame(xtable(AgreementTab))
+stargazer(agree, type = "latex", summary = FALSE, rownames = TRUE, title = "PCR detection agreement by specimen type")
+
+#In xtable
+agree <- as.data.frame(xtable(AgreementTab))
+print(xtable(agree, caption = "PCR detection agreement by specimen type"), caption.placement = getOption("xtable.caption.placement",
+                                    "top"))
+
+#STOOL REPLICATE 1 VS STOOL REPLICATE 2
+AgreementStool  <- addmargins(table(d$stool1_pos, d$stool2_pos, dnn=c("Bulk Stool Sample 1","Bulk Stool Sample 2")))
+colnames(AgreementStool) <- c( "Stool 1  --", "Stool 1 +", "Total")
+rownames(AgreementStool) <- c( "Stool 2  --", "Stool 2 +", "Total")
+
+AgreementStool
+
+print(xtable(AgreementStool), include.rownames=TRUE, booktabs = TRUE)
+
+AgreementStool <- as.data.frame(xtable(AgreementStool))
+
+stargazer(AgreementStool, type = "latex", summary = FALSE, rownames = TRUE, title = "PCR detection agreement by bulk stool replicate group", notes = "κ = 0.91 (95% CI 0.63–1.00)")
+
+#SWAB REPLICATE 1 VS SWAB REPLICATE 2
+AgreementSwab  <- addmargins(table(d$rectal1_pos, d$rectal2_pos, dnn=c("Rectal swab 1","Rectal swab 2")))
+colnames(AgreementSwab) <- c( "Swab 1  --", "Swab 1 +", "Total")
+rownames(AgreementSwab) <- c( "Swab 2  --", "Swab 2 +", "Total")
+
+print(xtable(AgreementSwab), include.rownames=TRUE, booktabs = TRUE)
+
+AgreementSwab <- as.data.frame(xtable(AgreementSwab))
+
+stargazer(AgreementSwab, type = "latex", summary = FALSE, rownames = TRUE, title = "PCR detection agreement by rectal swab replicate group", notes = "κ = 0.79 (95% CI 0.51–1.00)")
+```
+
+Sensitivity, specificity, PPV, and NPV.
+```{r epiTests}
+######################################
+#Calculate sensitivity and specificity
+######################################
+
+#Step 1: create a cross tabulation (also called a confusion matrix)
+swabTabAll <- xtabs(~eitherRectalPos + truePos, data=d)
+swabTab1 <- xtabs(~rectal1_pos + truePos, data=d)
+swabTab2 <- xtabs(~rectal2_pos + truePos, data=d)
+stoolTabAll <- xtabs(~eitherStoolPos + truePos, data=d)
+stoolTab1 <- xtabs(~stool1_pos + truePos, data=d)
+stoolTab2 <- xtabs(~stool2_pos + truePos, data=d)
+
+#Step 2: reverse column order
+swabTabAll <- swabTabAll[2:1, 2:1]
+swabTabAll
+
+swabTab1 <- swabTab1[2:1, 2:1]
+swabTab1
+
+swabTab2 <- swabTab2[2:1, 2:1]
+swabTab2
+
+stoolTabAll <- stoolTabAll[2:1, 2:1]
+stoolTabAll
+
+stoolTab1 <- stoolTab1[2:1, 2:1]
+stoolTab1
+
+stoolTab2 <- stoolTab2[2:1, 2:1]
+stoolTab2
+
+#Step 3: use the epi test command to calculate swab sensitivity and specificity WITH NA's REPLACED WITH 0's
+epi.tests(swabTabAll)
+#sensitivity with all swab positives vs truePos = 68%
+#specificity with all swab positives vs truePos = 100%
+epi.tests(swabTab1)
+#sensitivity with swab 1 positives vs truePos = 63%
+#specificity with swab 1 positives vs truePos = 100%
+epi.tests(swabTab2)
+#sensitivity with swab 2 positives vs truePos = 69%
+#specificity with swab 2 positives vs truePos = 100%
+epi.tests(stoolTabAll)
+#sensitivity with all stool positives vs truePos = 96%
+#specificity with all stool positives vs truePos = 100%
+epi.tests(stoolTab1)
+#sensitivity with stool 1 positives vs truePos = 95%
+#specificity with stool 1 positives vs truePos = 100%
+epi.tests(stoolTab2)
+#sensitivity with stool 2 positives vs truePos = 94%
+#specificity with stool 2 positives vs truePos = 100%
+
+
+#restrict to swabs with visable stool
+####################################
+table(d$visiblestoolonswab1)
+#only 16 swabs with visable stool in rep 1 and 18 in rep 2
+
+tabVisible <- xtabs(~rectal1_pos + truePos, data=subset(d, visiblestoolonswab1=="Yes"))
+tabVisible
+tabVisible <- tabVisible[2:1, 2:1]
+epi.tests(tabVisible)
+#sensitivity with swab 1 positives vs truePos = 60%
+#specificity with swab 1 positives vs truePos = 100%
+
+
+#restrict to watery/loose stool
+#################################
+tabLoose <- xtabs(~rectal1_pos + truePos, data=subset(d, loosewat1=="loose/watery"))
+tabLoose
+tabLoose <- tabLoose[2:1, 2:1]
+epi.tests(tabLoose)
+#sensitivity with all swab positives vs truePos = 50%
+#specificity with all swab positives vs truePos = 100%
+
+
+#restrict to condensation
+#################################
+tabCond <- xtabs(~rectal1_pos + truePos, data=subset(d, condensation==0))
+tabCond
+tabCond <- tabCond[2:1, 2:1]
+epi.tests(tabCond)
+#sensitivity with swab 1 positives vs truePos = 62%
+#specificity with swab 1 positives vs truePos = 100%
+
+
+#restrict you children (<12 months)
+#################################
+tab12 <- xtabs(~rectal1_pos + truePos, data=subset(d, ageM <12))
+tab12
+tab12 <- tab12[2:1, 2:1]
+epi.tests(tab12)
+#no effect here
+#sensitivity with swab 1 positives vs truePos = 67%
+#specificity with swab 1 positives vs truePos = 100%
+```
+
+Covariate effects.
+```{r covariate, results = "asis"}
+######################################################
+#Model evaluating effects of age, 
+#visable detection of stool and
+#stool consistancy and condensation on sensitivity 
+######################################################
+
+d2 <- d %>%
+  filter(truePos==1)
+
+sens <- glm(eitherRectalPos~1 + ageM + visiblestoolonswab1 + loosewat1 + condensation, family = binomial(link="logit"), 
+            data=d2)
+
+coef(summary(sens))
+
+sens2 <- glm(rectal1_pos~1 + ageM + visiblestoolonswab1 + loosewat1 + condensation, family = binomial(link="logit"), 
+            data=d2)
+
+coef(summary(sens2))
+
+
+#Model evaluating effects of age, visable detection of stool, and stool consistancy
+print(xtable(sens, caption = "Effects of age, visable detection of stool, and stool consistancy on rectal swab sensitivity"), caption.placement = getOption("xtable.caption.placement", "top"))
+
+
+#STARGAZER TABLE: specificity, sensitivity - soiling, loose/watery, condensation, age
+sensSpec <- (read.csv("/Users/razel/Dropbox/Rectal swab STH/Analysis/DataPrep/JAM_CSV_4-29-19/swab_sensitivity_specificity_transposed.csv"))
+
+colnames(sensSpec) <- c("", "Total (N = 57)", "Loose or watery (N = 11)", "Condensation (N = 75)", "Soiled (N = 15)", "< 12 months (N = 11)")
+
+stargazer(sensSpec, summary = FALSE, rownames = FALSE, title = "Covariate effects on sensitivity, specificity, and predictive value of rectal swabs for molecular detection of {\\emph{Giardia duodenalis}}")
+
+#STARGAZER TABLE: specificity, sensitivity SIMPLIFIED AND TRANSPOSED
+sensSpec <- (read.csv("/Users/razel/Dropbox/Rectal swab STH/Analysis/DataPrep/JAM_CSV_4-29-19/swab_sensitivity_specificity.csv"))
+
+colnames(sensSpec) <- c("", "Swab sensitivity (95% CI)", "Swab specificity (95% CI)", "p-value")
+
+stargazer(sensSpec, summary = FALSE, rownames = FALSE, title = "Covariate effects on sensitivity and specificity of rectal swabs for the real-time PCR detection of Giardia duodenalis")
+```
+
+LaTex tables for paper. See LaTex document for final drafts.
+```{r latex, results = "asis"}
+#Stool summary
+stoolCtSummary <- d %>%
+  select(personID, ctstool1, ctstool2)
+
+print(xtable(stoolCtSummary), include.rownames=TRUE, booktabs = TRUE)
+stoolCtSummary <- as.data.frame(xtable(stoolCtSummary))
+stargazer(stoolCtSummary, type = "latex", summary = TRUE, rownames = TRUE)
+
+#Swab summary
+swabCtSummary <- d %>%
+  select(personID, ctrectal1, ctrectal2)
+
+print(xtable(swabCtSummary), include.rownames=TRUE, booktabs = TRUE)
+swabCtSummary <- as.data.frame(xtable(swabCtSummary))
+stargazer(swabCtSummary, type = "latex", summary = TRUE, rownames = TRUE)
+
+#POSITIVITY / MEAN CT TABLE
+replicateSummary <- read_csv("/Users/razel/Dropbox/Rectal swab STH/Analysis/LaTex and CSV tables/giardia_table2.csv")
+
+stargazer(replicateSummary, type = "latex", summary = FALSE, rownames = FALSE, title = "PCR positivity and mean CT value by specimen replicate group")
+
+# FALSE NEGATIVE / SENSITIVITY TABLE
+sensitivitySummary <- read_csv("/Users/razel/Dropbox/Rectal swab STH/Analysis/LaTex and CSV tables/giardia_table5.csv")
+
+stargazer(sensitivitySummary, type = "latex", summary = FALSE, rownames = FALSE, title = "PCR negativity and diagnostic sensitivity by specimen replicate group")
+
+# SEQUENCES TABLE
+seqTable <- read_csv("/Users/razel/Dropbox/Rectal swab STH/Analysis/LaTex and CSV tables/giardia_sequences_table.csv")
+
+stargazer(seqTable, type = "latex", summary = FALSE, rownames = FALSE, title = "DNA target, primer, and probe sequences for the real-time PCR detection of Giardia duodenalis")
+
+#write.csv(d, file = "d_5-31-19.csv")
+```
+
+Mean CT value by DNA isolation method. T tests and scatterplots comparing CT values.
+```{r scatter}
+######################################
+# SWAB VS STOOL
+######################################
+
+#data frame for replicate 1 Ct values
+ctDup1 <- d %>%
+  select(personID, ctstool1, ctrectal1) %>%
+  drop_na()
+ctDup1$Duplicate <- rep(1,nrow(ctDup1))
+names(ctDup1) <- c("ID", "Stool_CT", "Rectal_CT", "Duplicate")
+
+#data frame for replicate 2 Ct values
+ctDup2 <- d %>%
+  select(personID, ctstool2, ctrectal2) %>%
+  drop_na()
+ctDup2$Duplicate <- rep(2,nrow(ctDup2))
+names(ctDup2) <- c("ID", "Stool_CT", "Rectal_CT", "Duplicate")
+
+#merge data frames
+ctDupAll <- rbind(ctDup1, ctDup2)
+
+#SCATTER PLOT
+#############
+scatterDup <- ggplot(ctDupAll, aes(Stool_CT, Rectal_CT)) + 
+  geom_point(data = ctDupAll, color = "#543005",
+             aes(shape = as.factor(Duplicate))) + 
+  theme_light() + 
+  labs(title = "", 
+       x = "\nBulk stool CT value", 
+       y = "\n\nRectal swab CT value\n") + 
+  theme(axis.text = element_text(size = 10), 
+        axis.title = element_text(size = 12), 
+        plot.title = element_text(size = 12, 
+                                  face = "bold", hjust = 0.5),
+        legend.title = element_text(size = 12),
+        legend.direction = "vertical",
+        legend.position = c(0.84, 0.18),
+        legend.box.background = element_rect(colour = "black")) +
+  geom_smooth(method = lm, se = FALSE, color = "darkslategray", size = 0.5) +
+  scale_y_continuous(limits=c(15, 35)) + 
+  scale_x_continuous(limits=c(15, 35)) +
+  scale_shape_manual(name = "Replicate", values = c(19, 17)) +
+  geom_abline(intercept = 0, slope=1, linetype="dotted") + 
+  annotate("text",
+           x = 17,
+           y = 32, 
+           label = "paste(italic(R) ^ 2, \" = 0.171\")",
+           size = 4,
+           parse = TRUE) 
+  #coord_fixed()
+
+scatterDup
+  
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/scatter_by_duplicate_7-22.jpg", plot=last_plot(), width=6, height=6)
+
+# R2 & P VALUE:
+m1 <- lm(Rectal_CT ~ Stool_CT, data = ctDupAll)
+summary(m1)
+#Residual standard error: 3.719 on 49 degrees of freedom
+#Multiple R-squared:  0.171,	Adjusted R-squared:  0.1541 
+#F-statistic: 10.11 on 1 and 49 DF,  p-value: 0.002557
+
+stargazer(ctDupAll, summary = TRUE, rownames = FALSE)
+#shows ct means and sd per method
+
+#p-value from t-test comparing overall means from all samples positive for swabs and stool
+ctALL1 <- d %>%
+  select(personID, ctstool1, ctrectal1) %>%
+  drop_na()
+  colnames(ctALL1) <- c("ID", "Stool_CT", "Rectal_CT")
+ctALL2 <- d %>%
+  select(personID, ctstool2, ctrectal2) %>%
+  drop_na()
+  colnames(ctALL2) <- c("ID", "Stool_CT", "Rectal_CT")
+ctALL <- rbind(ctALL1, ctALL2)
+
+ctALLTab <- ctALL %>%
+  select(Stool_CT, Rectal_CT, ID) %>%
+  gather(key="SampleType", value="CTvalue", -ID) %>%
+  drop_na()
+
+t.test(CTvalue ~SampleType, data = ctALLTab, paired=T)
+
+#p-value from t-test comparing means by replicate group
+t_CT1 <- d %>%
+  select(ctstool1, ctrectal1, personID) %>%
+  drop_na() %>%
+  gather(key="SampleType", value="CTvalue", -personID) %>%
+  mutate(SampleType = factor(SampleType)) %>%
+  drop_na()
+
+t.test(CTvalue ~SampleType, data = t_CT1, paired=T)
+
+t_CT2 <- d %>%
+  select(ctstool2, ctrectal2, personID) %>%
+  drop_na() %>%
+  gather(key="SampleType", value="CTvalue", -personID) %>%
+  mutate(SampleType = factor(SampleType)) %>%
+  drop_na()
+
+t.test(CTvalue ~SampleType, data = t_CT2, paired=T)
+
+group_by(t_CT1, SampleType) %>%
+  summarise(
+    count = n(),
+    mean = mean(CTvalue, na.rm = TRUE),
+    sd = sd(CTvalue, na.rm = TRUE)
+  )
+
+
+######################################
+# STOOL 1 VS STOOL 2
+######################################
+
+#SCATTER PLOT
+#############
+scatterS <- ggplot(d, aes(ctstool1, ctstool2)) + 
+  geom_point(color = "#35978f") + 
+  theme_light() + 
+  labs(title = "", 
+       x = "\nBulk stool (1) CT value", 
+       y = "\n\nBulk stool (2) CT value\n") + 
+  theme(axis.text = element_text(size = 10), 
+        axis.title = element_text(size = 12), 
+        plot.title = element_text(size = 12, 
+                                  face = "bold", hjust = 0.5), 
+        legend.title = element_text(size = 12)) + 
+  geom_smooth(method = lm, se = FALSE, color = "darkslategray", size = 0.5) +
+  scale_y_continuous(limits=c(15, 35)) + 
+  scale_x_continuous(limits=c(15, 35)) + 
+  geom_abline(intercept = 0, slope=1, linetype="dotted") + 
+  annotate("text",
+           x = 17,
+           y = 32, 
+           label = "paste(italic(R) ^ 2, \" = 0.956\")",
+           size = 4,
+           parse = TRUE) 
+    #coord_fixed()
+
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/scatter_stool_replicates.jpg", plot=last_plot(), width=6, height=6)
+
+# R2 & P VALUE:
+m2 <- lm(ctstool2 ~ ctstool1, data = d)
+summary(m2)
+#Multiple R-squared:  0.9557,	Adjusted R-squared:  0.9542 
+#F-statistic: 626.3 on 1 and 29 DF,  p-value: < 2.2e-16
+
+d2 <- d %>%
+  select(ctstool1, ctstool2, personID) %>%
+  gather(key="SampleType", value="CTvalue", -personID) %>%
+  drop_na()
+
+group_by(d2, SampleType) %>%
+  summarise(
+    count = n(),
+    mean = mean(CTvalue, na.rm = TRUE),
+    sd = sd(CTvalue, na.rm = TRUE)
+  )
+
+t.test(CTvalue ~SampleType, data=d2, paired=T) # very high p-value indicates no difference 
+
+######################################
+# SWAB 1 VS SWAB 2
+######################################
+
+#SCATTER PLOT
+#############
+scatterR <- ggplot(d, aes(ctrectal1, ctrectal2)) + 
+  geom_point(color = "#8c510a") + 
+  theme_light() + 
+  labs(title = "", 
+       x = "\nRectal swab (1) CT value", 
+       y = "\n\nRectal swab (2) CT value\n") + 
+  theme(axis.text = element_text(size = 10), 
+        axis.title = element_text(size = 12),
+        plot.title = element_text(size = 12, 
+                                  face = "bold", hjust = 0.5), 
+        legend.title = element_text(size = 12)) + 
+  geom_smooth(method = lm, se = FALSE, color = "darkslategray", size = 0.5) +
+  scale_y_continuous(limits=c(15, 35)) + 
+  scale_x_continuous(limits=c(15, 35)) + 
+  geom_abline(intercept = 0, slope=1, linetype="dotted") + 
+  annotate("text",
+           x = 17,
+           y = 32, 
+           label = "paste(italic(R) ^ 2, \" = 0.665\")",
+           size = 4,
+           parse = TRUE) 
+    #coord_fixed()
+
+scatterR
+
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/scatter_rectal_replicates.jpg", plot=last_plot(), width=6, height=6)
+
+# R2 & P VALUE:
+m3 <- lm(ctrectal2 ~ ctrectal1, data = d)
+summary(m3)
+#Multiple R-squared:  0.6649,	Adjusted R-squared:  0.6481 
+#F-statistic: 39.68 on 1 and 20 DF,  p-value: 3.777e-06
+
+d2 <- d %>%
+  select(ctrectal1, ctrectal2, personID) %>%
+  gather(key="SampleType", value="CTvalue", -personID) %>%
+  drop_na()
+
+group_by(d2, SampleType) %>%
+  summarise(
+    count = n(),
+    mean = mean(CTvalue, na.rm = TRUE),
+    sd = sd(CTvalue, na.rm = TRUE)
+  )
+
+t.test(CTvalue ~SampleType, data=d2, paired=T) # high p-value indicates no difference 
+
+######################################
+# COMBINED SCATTERPLOTS FOR PAPER
+######################################
+
+title3 <- ggdraw() + draw_label("", fontface = "bold")
+scatterGrid3 <- plot_grid(scatterDup, scatterS, scatterR, labels = c("A", "B", "C"), nrow = 1, align = "h")
+scatterGrid3 <- plot_grid(title3, scatterGrid3, ncol = 1, rel_heights = c(0.1, 1))
+scatterGrid3
+#save_plot("scatter_grid_horizontal.jpg", scatterGrid3, base_height = 6, base_width = 18)
+
+title2 <- ggdraw() + draw_label("", fontface = "bold")
+scatterGrid2 <- plot_grid(scatterS, scatterR, labels = c("A", "B"), nrow = 1, align = "h")
+scatterGrid2 <- plot_grid(title2, scatterGrid2, ncol = 1, rel_heights = c(0.1, 1))
+scatterGrid2
+#save_plot("scatter_grid_horizontal2.jpg", scatterGrid2, base_height = 6, base_width = 12)
+```
+
+
+Boxplot comparing median and mean Ct values in stool samples where rectal was positive and where rectal was negative.
+```{r box}
+#USING ONLY REPLICATE ONE FOR BOXPLOT.
+
+ggplot(d, aes(x=as.factor(rectal1_pos), y=ctstool1, fill = as.factor(rectal1_pos), na.rm=T)) +
+  geom_boxplot() +
+  theme_light() +
+  stat_summary(fun.y=mean, geom="errorbar", 
+               aes(ymax = ..y.., ymin = ..y.., color="mean"), 
+               width = .75, 
+               linetype = "dashed",
+               color = "#01665e") +
+  scale_color_discrete(name = "", labels = c("Mean")) + 
+  labs (x = "\nPCR detection by rectal swab", 
+        y="Mean stool sample Ct value\n", 
+        title = "Figure 3. Mean and median Ct values in stool samples with \ncorresponding PCR positive and PCR negative rectal swabs\n") + 
+  theme(axis.text = element_text(size = 8), 
+        axis.title = element_text(size = 10), 
+        plot.title = element_text(size = 10, 
+                                  face = "bold", hjust = 0.5), 
+        legend.title = element_text(size = 10,),
+        legend.position = "none",
+        panel.grid.major.x = element_blank()) +
+  scale_fill_manual(values=c("#c7eae5", "#80cdc1"), 
+                    name = "", 
+                    labels = c("Negative", "Positive")) +
+  scale_x_discrete(labels = c("0" = "Negative", "1" = "Positive"))
+
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/giardia_boxplot.jpg", plot=last_plot(), width=6, height=6)
+
+# T-TEST
+group_by(d2, rectal1_pos) %>%
+  summarise(
+    count = n(),
+    mean = mean(ctstool1, na.rm = TRUE),
+    sd = sd(ctstool1, na.rm = TRUE)
+  )
+
+t.test(ctstool1 ~rectal1_pos, data=d)
+
+#USING BOTH REPLICATE GROUPS FOR BOXPLOT.
+
+ggplot(d, aes(x=as.factor(eitherRectalPos), y=ctstoolMean, fill = as.factor(eitherRectalPos), na.rm=T)) +
+  geom_boxplot() +
+  theme_light() +
+  stat_summary(fun.y=mean, geom="errorbar", 
+               aes(ymax = ..y.., ymin = ..y.., color="mean"), 
+               width = .75, 
+               linetype = "dashed",
+               color = "#f5f5f5") +
+  scale_color_discrete(name = "", labels = c("Mean")) + 
+  labs (x = "\nPCR detection by rectal swab", 
+        y="Mean stool sample Ct value\n", 
+        title = "") + 
+  theme(axis.text = element_text(size = 8), 
+        axis.title = element_text(size = 10), 
+        plot.title = element_text(size = 10, 
+                                  face = "bold", hjust = 0.5), 
+        legend.title = element_text(size = 10,),
+        legend.position = "none",
+        panel.grid.major.x = element_blank()) +
+  scale_fill_manual(values=c("#80cdc1", "#35978f"), 
+                    name = "", 
+                    labels = c("Negative", "Positive")) +
+  scale_x_discrete(labels = c("0" = "Negative", "1" = "Positive"))
+
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/giardia_boxplot_ALL.jpg", plot=last_plot(), width=6, height=6)
+
+# T-TEST
+group_by(d2, rectal1_pos) %>%
+  summarise(
+    count = n(),
+    mean = mean(ctstool1, na.rm = TRUE),
+    sd = sd(ctstool1, na.rm = TRUE)
+  )
+
+t.test(ctstoolMean ~eitherRectalPos, data=d)
+```
+
+Restrict validity estimates to low CT values. Create CT quartile bar chart.
+```{r quartile}
+d$stoolct_quart <- ntile(d$ctstool1, 4)
+
+ggplot(d, aes(x=ctstool1)) +
+  geom_histogram() + 
+  theme_minimal()
+
+d2 <- d %>%
+  #filter(ctstool1<30 | is.na(ctstool1))
+  filter(stoolct_quart != 4 | is.na(ctstool1))
+
+tab6 <- xtabs(~rectal2_pos + truePos, data=d2)
+tab6
+tab6 <- tab6[ 2:1, 2:1]
+epi.tests(tab6)
+epi.kappa(tab6)
+#sensitivity with all swab positives vs true positives = 84% (0.71, 0.94)
+#sensitivity with swab 1 positives vs true positives = 80% (0.65, 0.90)
+#sensitivity with swab 2 positives vs true positives = 86% (0.67, 0.96)
+
+# add ct values to model
+d3 <- d %>%
+  filter(truePos==1)
+
+sens <- glm(rectal1_pos~1 + ctstool1, family = binomial(link="logit"), 
+            data=d3)
+
+coef(summary(sens))
+#ctstool1 has a significant effect on whether rectal swab 1 was positive (p = 0.0001551446)
+
+sens <- glm(eitherRectalPos~1 + ctstoolMean, family = binomial(link="logit"), 
+            data=d3)
+
+coef(summary(sens))
+#ctstoolMean has a significant effect on whether either rectal swab was positive (p = 0.0002894428)
+
+#generate quartiles
+
+group_by(d, stoolct_quart) %>%
+  summarize(meanCT = mean(ctstool1),
+            min = min(ctstool1), 
+            max = max(ctstool1))
+
+d3 <- d %>%
+  filter(stool1_ID != 484196 & stool1_ID != 644754 & stool1_ID != 861856) %>%
+  filter(truePos ==1) %>%
+  group_by(stoolct_quart) %>%
+    summarize(nPos = sum(rectal1_pos, na.rm = TRUE),
+            N = n(),
+            N_notMiss = sum(!is.na(rectal1_pos)),
+            PropPos = mean(rectal1_pos, na.rm = TRUE),
+            sd = sd(rectal1_pos, na.rm=TRUE)) %>%
+  mutate(SE = sd/sqrt(N_notMiss), lowerCI = PropPos - 1.96*SE, upperCI = PropPos + 1.96*SE)
+
+#BAR CHART
+
+ggplot(d3, aes(x=as.factor(stoolct_quart), y=PropPos, fill=as.factor(stoolct_quart))) +
+  geom_bar(stat= "identity") +
+  #scale_y_continuous(labels=scales::percent) +
+  #geom_errorbar(aes(ymin=lowerCI, ymax=upperCI), width=.2,
+                #position=position_dodge(.9)) +
+  # scale_fill_brewer(palette="Paired", labels=c("Stool sample", "Rectal swab")) + 
+  theme_minimal() +
+  theme(panel.grid.major.x = element_blank()) +
+  theme(axis.text = element_text(size = 8), 
+        axis.title = element_text(size = 10), 
+        plot.title = element_text(size = 10, 
+                                  face = "bold", hjust = 0.5), 
+        legend.title = element_text(size = 10)) +
+  scale_y_continuous(labels = percent, limits = c(0,1), expand = c(0,0)) +
+  labs (y= "Percent rectal swabs PCR positive\n", 
+        x = "\nStool CT quartile", 
+        title = "") +
+  scale_fill_manual(name = "Stool CT value", 
+                      labels = c("Q1: 13.6 - 21.4 ", 
+                                 "Q2: 21.41 - 25.4 ", 
+                                 "Q3: 25.41-30.2 ", 
+                                 "Q4: 30.3 - 34.7"),
+                      values = rev(BrBG4_turq_dark)) +
+                      #Brown color pallete 
+                      #values = rev(BrBG4_brown)) +
+  geom_text(aes(label=c("14/14", "9/13", "10/14", "1/13")), 
+            vjust=1.6, 
+            color="white", 
+            size=3.5)
+
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/ct_quartile.jpg", plot=last_plot(), width=8, height=6)
+```
+
+Comparing CT values for rectal swabs and bulk stool by stool consistancy.
+```{r ctConsist}
+d4 <- d %>%
+  select(ctstool1, ctrectal1, loosewat1, personID) %>%
+  gather(key="SampleType", value="CTvalue", -personID, -loosewat1) %>%
+  drop_na()
+
+ggplot(d4, aes(x=loosewat1, y=CTvalue, fill=SampleType, na.rm=T)) +
+geom_boxplot() +
+  theme_light() +
+  #stat_summary(fun.y=mean, geom="errorbar", 
+               #aes(ymax = ..y.., ymin = ..y.., color="mean"), 
+               #width = .75, 
+               #linetype = "dashed",
+               #color = "#f5f5f5") +
+  scale_color_discrete(name = "", labels = c("Mean")) + 
+  labs (x = "", 
+        y="Cycle threshold value\n", 
+        title = "Figure 5. Mean and median CT values by \nspecimen type and participant stool consistency\n") + 
+  theme(axis.text = element_text(size = 8), 
+        axis.title = element_text(size = 10), 
+        plot.title = element_text(size = 10, 
+                                  face = "bold", hjust = 0.5), 
+        legend.title = element_text(size = 10,),
+        legend.position = "bottom",
+        panel.grid.major.x = element_blank()) +
+  scale_fill_manual(values=c("#dfc27d", "#35978f"), 
+                    name = "", 
+                    labels = c("Rectal swab", "Bulk stool")) +
+  scale_x_discrete(labels = c("loose/watery" = "Loose or watery stool", "formed" = "Formed stool"))
+
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/consistency_boxplot.jpg", plot=last_plot(), width=6, height=6)
+```
+
+Age and CT value plots.
+```{r agePlots}
+ggplot(d, aes(x=ageY, y=ctstool1)) +  
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE, color = "darkslategray", size = 0.5) +
+  theme_minimal()
+
+d5 <- d %>%
+  select(stool1_pos, rectal1_pos, ageY, personID) %>%
+  gather(key="SampleType", value="Pos", -personID, -ageY) 
+
+ggplot(d5, aes(x=ageY, y=Pos, color=SampleType)) +  
+  geom_smooth() +
+  theme_minimal()
+
+ggplot(dTest, aes(x=ageY, y=ctstoolMax)) +
+  geom_smooth() +
+  theme_minimal()
+
+d6 <- d %>%
+  select(ctstool1, ctrectal1, ageY, personID) %>%
+  gather(key="SampleType", value="CTvalue", -personID, -ageY) 
+ 
+ggplot(d6, aes(x=ageY, y=CTvalue, color=SampleType)) +  
+  geom_smooth(fill="#D0DEDC") +
+  #geom_point() +
+  theme_light() +
+  theme(axis.text = element_text(size = 8), 
+        axis.title = element_text(size = 10), 
+        plot.title = element_text(size = 10, 
+                                  face = "bold", hjust = 0.5), 
+        legend.title = element_text(size = 10,),
+        legend.position = "right",
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank()) +
+  labs (x = "\nAge in years", 
+        y="Cycle threshold value\n") + 
+        #title = "Real-time PCR CT value by specimen type and age of child\n") + 
+  scale_fill_manual(values=c("#dfc27d"), 
+                    name = "", 
+                    labels = c("Rectal swab", "Bulk stool")) + 
+  scale_color_manual(name = "Specimen type", 
+                     labels = c("Rectal swab", "Bulk stool"), 
+                     values = c("#8c510a", "#35978f"))
+
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/ct_smooth.jpg", plot=last_plot(), width=8, height=6)
+```
