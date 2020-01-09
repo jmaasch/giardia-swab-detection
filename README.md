@@ -7,6 +7,10 @@ collected in rural Boboye Department, Dosso Region, Niger.
 **Authors**: Maasch, Jacqueline; Arzika, Ahmed; Cook, Catherine; Lebas, Elodie; Pilotte, Nils; Grant, Jessica; Williams, Steve; 
 Keenan, Jeremy; Lietman, Thomas; Aiemjoy, Kristen 
 
+### Analysis
+
 *Data analysis and visualization by Jacqueline Maasch and Kristen Aiemjoy.*
+
+**Analysis**: To view our data analysis, see ```/r-markdown```.
 
 **Raw data**: To request raw data, please submit an ```Issue``` on this repository containing your email address.
