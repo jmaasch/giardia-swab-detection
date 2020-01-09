@@ -17,6 +17,5 @@
 
 *Data analysis and visualization by Jacqueline Maasch and Kristen Aiemjoy.*
 
-**Analysis**: To view our data analysis, see ```/r-markdown```.
-
-**Raw data**: To request raw data, please submit an ```Issue``` on this repository containing your email address.
+* **Analysis**: To view our data analysis, see ```/r-markdown```.
+* **Raw data**: To request raw data, please submit an ```Issue``` on this repository containing your email address.
