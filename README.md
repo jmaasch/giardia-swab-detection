@@ -4,9 +4,6 @@
 validate this protocol by comparing the validity of qPCR diagnosis by paired rectal swab and bulk stool samples 
 collected in rural Boboye Department, Dosso Region, Niger. 
 
-**Authors**: Maasch, Jacqueline; Arzika, Ahmed; Cook, Catherine; Lebas, Elodie; Pilotte, Nils; Grant, Jessica; Williams, Steve; 
-Keenan, Jeremy; Lietman, Thomas; Aiemjoy, Kristen 
-
 **Authors:** Jacqueline R. M. A. Maasch<sup>1</sup>, Ahmed M. Arzika<sup>2</sup>, Catherine Cook<sup>3</sup>, Elodie Lebas<sup>3</sup>, Nils Pilotte<sup>1,4</sup>, Jessica R. Grant<sup>1</sup>, Steven A. Williams<sup>1, 4</sup>, Jeremy D. Keenan<sup>3</sup>, Thomas M. Lietman<sup>3</sup>, Kristen Aiemjoy<sup>3, 5</sup>
 
 **Affiliations:**
