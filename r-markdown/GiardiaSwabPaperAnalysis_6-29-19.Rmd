@@ -159,7 +159,9 @@ print(xtable(AgreementStool), include.rownames=TRUE, booktabs = TRUE)
 
 AgreementStool <- as.data.frame(xtable(AgreementStool))
 
-stargazer(AgreementStool, type = "latex", summary = FALSE, rownames = TRUE, title = "PCR detection agreement by bulk stool replicate group", notes = "κ = 0.91 (95% CI 0.63–1.00)")
+stargazer(AgreementStool, type = "latex", summary = FALSE, 
+          rownames = TRUE, title = "PCR detection agreement by bulk stool replicate group", 
+          notes = "κ = 0.91 (95% CI 0.63–1.00)")
 
 #SWAB REPLICATE 1 VS SWAB REPLICATE 2
 AgreementSwab  <- addmargins(table(d$rectal1_pos, d$rectal2_pos, dnn=c("Rectal swab 1","Rectal swab 2")))
@@ -170,7 +172,9 @@ print(xtable(AgreementSwab), include.rownames=TRUE, booktabs = TRUE)
 
 AgreementSwab <- as.data.frame(xtable(AgreementSwab))
 
-stargazer(AgreementSwab, type = "latex", summary = FALSE, rownames = TRUE, title = "PCR detection agreement by rectal swab replicate group", notes = "κ = 0.79 (95% CI 0.51–1.00)")
+stargazer(AgreementSwab, type = "latex", summary = FALSE, 
+          rownames = TRUE, title = "PCR detection agreement by rectal swab replicate group", 
+          notes = "κ = 0.79 (95% CI 0.51–1.00)")
 ```
 
 Sensitivity, specificity, PPV, and NPV.
@@ -282,34 +286,39 @@ Covariate effects.
 d2 <- d %>%
   filter(truePos==1)
 
-sens <- glm(eitherRectalPos~1 + ageM + visiblestoolonswab1 + loosewat1 + condensation, family = binomial(link="logit"), 
-            data=d2)
+sens <- glm(eitherRectalPos~1 + ageM + visiblestoolonswab1 + loosewat1 + condensation, 
+            family = binomial(link="logit"), data=d2)
 
 coef(summary(sens))
 
-sens2 <- glm(rectal1_pos~1 + ageM + visiblestoolonswab1 + loosewat1 + condensation, family = binomial(link="logit"), 
-            data=d2)
+sens2 <- glm(rectal1_pos~1 + ageM + visiblestoolonswab1 + loosewat1 + condensation, 
+             family = binomial(link="logit"), data=d2)
 
 coef(summary(sens2))
 
 
 #Model evaluating effects of age, visable detection of stool, and stool consistancy
-print(xtable(sens, caption = "Effects of age, visable detection of stool, and stool consistancy on rectal swab sensitivity"), caption.placement = getOption("xtable.caption.placement", "top"))
+print(xtable(sens, 
+             caption = "Effects of age, visable detection of stool, and stool consistancy on rectal swab sensitivity"),
+             caption.placement = getOption("xtable.caption.placement", "top"))
 
 
 #STARGAZER TABLE: specificity, sensitivity - soiling, loose/watery, condensation, age
 sensSpec <- (read.csv("/Users/razel/Dropbox/Rectal swab STH/Analysis/DataPrep/JAM_CSV_4-29-19/swab_sensitivity_specificity_transposed.csv"))
 
-colnames(sensSpec) <- c("", "Total (N = 57)", "Loose or watery (N = 11)", "Condensation (N = 75)", "Soiled (N = 15)", "< 12 months (N = 11)")
+colnames(sensSpec) <- c("", "Total (N = 57)", "Loose or watery (N = 11)", 
+                        "Condensation (N = 75)", "Soiled (N = 15)", "< 12 months (N = 11)")
 
-stargazer(sensSpec, summary = FALSE, rownames = FALSE, title = "Covariate effects on sensitivity, specificity, and predictive value of rectal swabs for molecular detection of {\\emph{Giardia duodenalis}}")
+stargazer(sensSpec, summary = FALSE, rownames = FALSE, 
+          title = "Covariate effects on sensitivity, specificity, and predictive value of rectal swabs for molecular detection of {\\emph{Giardia duodenalis}}")
 
 #STARGAZER TABLE: specificity, sensitivity SIMPLIFIED AND TRANSPOSED
 sensSpec <- (read.csv("/Users/razel/Dropbox/Rectal swab STH/Analysis/DataPrep/JAM_CSV_4-29-19/swab_sensitivity_specificity.csv"))
 
 colnames(sensSpec) <- c("", "Swab sensitivity (95% CI)", "Swab specificity (95% CI)", "p-value")
 
-stargazer(sensSpec, summary = FALSE, rownames = FALSE, title = "Covariate effects on sensitivity and specificity of rectal swabs for the real-time PCR detection of Giardia duodenalis")
+stargazer(sensSpec, summary = FALSE, rownames = FALSE, 
+          title = "Covariate effects on sensitivity and specificity of rectal swabs for the real-time PCR detection of Giardia duodenalis")
 ```
 
 LaTex tables for paper. See LaTex document for final drafts.
@@ -333,17 +342,20 @@ stargazer(swabCtSummary, type = "latex", summary = TRUE, rownames = TRUE)
 #POSITIVITY / MEAN CT TABLE
 replicateSummary <- read_csv("/Users/razel/Dropbox/Rectal swab STH/Analysis/LaTex and CSV tables/giardia_table2.csv")
 
-stargazer(replicateSummary, type = "latex", summary = FALSE, rownames = FALSE, title = "PCR positivity and mean CT value by specimen replicate group")
+stargazer(replicateSummary, type = "latex", summary = FALSE, 
+          rownames = FALSE, title = "PCR positivity and mean CT value by specimen replicate group")
 
 # FALSE NEGATIVE / SENSITIVITY TABLE
 sensitivitySummary <- read_csv("/Users/razel/Dropbox/Rectal swab STH/Analysis/LaTex and CSV tables/giardia_table5.csv")
 
-stargazer(sensitivitySummary, type = "latex", summary = FALSE, rownames = FALSE, title = "PCR negativity and diagnostic sensitivity by specimen replicate group")
+stargazer(sensitivitySummary, type = "latex", summary = FALSE, 
+          rownames = FALSE, title = "PCR negativity and diagnostic sensitivity by specimen replicate group")
 
 # SEQUENCES TABLE
 seqTable <- read_csv("/Users/razel/Dropbox/Rectal swab STH/Analysis/LaTex and CSV tables/giardia_sequences_table.csv")
 
-stargazer(seqTable, type = "latex", summary = FALSE, rownames = FALSE, title = "DNA target, primer, and probe sequences for the real-time PCR detection of Giardia duodenalis")
+stargazer(seqTable, type = "latex", summary = FALSE, rownames = FALSE, 
+          title = "DNA target, primer, and probe sequences for the real-time PCR detection of Giardia duodenalis")
 
 #write.csv(d, file = "d_5-31-19.csv")
 ```
@@ -403,7 +415,8 @@ scatterDup <- ggplot(ctDupAll, aes(Stool_CT, Rectal_CT)) +
 
 scatterDup
   
-#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/scatter_by_duplicate_7-22.jpg", plot=last_plot(), width=6, height=6)
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/scatter_by_duplicate_7-22.jpg", 
+        plot=last_plot(), width=6, height=6)
 
 # R2 & P VALUE:
 m1 <- lm(Rectal_CT ~ Stool_CT, data = ctDupAll)
@@ -489,7 +502,8 @@ scatterS <- ggplot(d, aes(ctstool1, ctstool2)) +
            parse = TRUE) 
     #coord_fixed()
 
-#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/scatter_stool_replicates.jpg", plot=last_plot(), width=6, height=6)
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/scatter_stool_replicates.jpg", 
+        plot=last_plot(), width=6, height=6)
 
 # R2 & P VALUE:
 m2 <- lm(ctstool2 ~ ctstool1, data = d)
@@ -542,7 +556,8 @@ scatterR <- ggplot(d, aes(ctrectal1, ctrectal2)) +
 
 scatterR
 
-#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/scatter_rectal_replicates.jpg", plot=last_plot(), width=6, height=6)
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/scatter_rectal_replicates.jpg", 
+        plot=last_plot(), width=6, height=6)
 
 # R2 & P VALUE:
 m3 <- lm(ctrectal2 ~ ctrectal1, data = d)
@@ -610,7 +625,8 @@ ggplot(d, aes(x=as.factor(rectal1_pos), y=ctstool1, fill = as.factor(rectal1_pos
                     labels = c("Negative", "Positive")) +
   scale_x_discrete(labels = c("0" = "Negative", "1" = "Positive"))
 
-#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/giardia_boxplot.jpg", plot=last_plot(), width=6, height=6)
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/giardia_boxplot.jpg", 
+        plot=last_plot(), width=6, height=6)
 
 # T-TEST
 group_by(d2, rectal1_pos) %>%
@@ -648,7 +664,8 @@ ggplot(d, aes(x=as.factor(eitherRectalPos), y=ctstoolMean, fill = as.factor(eith
                     labels = c("Negative", "Positive")) +
   scale_x_discrete(labels = c("0" = "Negative", "1" = "Positive"))
 
-#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/giardia_boxplot_ALL.jpg", plot=last_plot(), width=6, height=6)
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/giardia_boxplot_ALL.jpg", 
+        plot=last_plot(), width=6, height=6)
 
 # T-TEST
 group_by(d2, rectal1_pos) %>%
@@ -748,7 +765,8 @@ ggplot(d3, aes(x=as.factor(stoolct_quart), y=PropPos, fill=as.factor(stoolct_qua
             color="white", 
             size=3.5)
 
-#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/ct_quartile.jpg", plot=last_plot(), width=8, height=6)
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/ct_quartile.jpg", 
+        plot=last_plot(), width=8, height=6)
 ```
 
 Comparing CT values for rectal swabs and bulk stool by stool consistancy.
@@ -782,7 +800,8 @@ geom_boxplot() +
                     labels = c("Rectal swab", "Bulk stool")) +
   scale_x_discrete(labels = c("loose/watery" = "Loose or watery stool", "formed" = "Formed stool"))
 
-#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/consistency_boxplot.jpg", plot=last_plot(), width=6, height=6)
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/consistency_boxplot.jpg", 
+        plot=last_plot(), width=6, height=6)
 ```
 
 Age and CT value plots.
@@ -830,5 +849,6 @@ ggplot(d6, aes(x=ageY, y=CTvalue, color=SampleType)) +
                      labels = c("Rectal swab", "Bulk stool"), 
                      values = c("#8c510a", "#35978f"))
 
-#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/ct_smooth.jpg", plot=last_plot(), width=8, height=6)
+#ggsave("/Users/razel/Dropbox/Rectal swab STH/Analysis/Results/ct_smooth.jpg", 
+        plot=last_plot(), width=8, height=6)
 ```
