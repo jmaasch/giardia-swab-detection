@@ -1,5 +1,15 @@
 # Rectal swabs as an alternative sample collection method to bulk stool for the real-time PCR detection of *Giardia duodenalis* 
 
+<p align="center">   
+<img src="https://github.com/jmaasch/giardia-swab-detection/blob/master/figures/figures_initial_submission/scatter_grid_FINAL.jpg" align="middle"/>
+</p>
+
+> *Above:* Real-time PCR Cq value correlations by specimen type (A) and sample replicate group (B & C) for the detection of *Giardia duodenalis.*
+
+## Project outline
+
+*A manuscript resulting from this project has been submitted for peer review.*
+
 **Project goals:**
 * To develop a protocol for DNA isolation from rectal swabs for qPCR detection of enteric parasites.
 * To assess the comparative validity and reproducibility of qPCR diagnosis of *Giardia duodenalis* by DNA isolated from paired rectal swab and bulk stool samples collected in rural Boboye Department, Dosso Region, Niger.
