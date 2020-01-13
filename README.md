@@ -4,7 +4,7 @@
 <img src="https://github.com/jmaasch/giardia-swab-detection/blob/master/figures/figures_initial_submission/scatter_grid_FINAL.jpg" align="middle"/>
 </p>
 
-> *Above:* Real-time PCR Cq value correlations by specimen type (A) and sample replicate group (B & C) for the detection of *Giardia duodenalis.*
+> *Above:* Real-time PCR Cq value correlations by specimen type (A) and sample replicate group (B & C).
 
 ## Project outline
 
