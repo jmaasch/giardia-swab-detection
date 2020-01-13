@@ -118,7 +118,7 @@ tab2 <- tab2[ 2:1, 2:1]
 #Step 3: use the epi test command to calculate sensitivity and specificity
 epi.kappa(tab2)
 
-#all positives
+#All positives
 tab3 <- xtabs(~eitherRectalPos + eitherStoolPos, data=d)
 tab3 <- tab3[ 2:1, 2:1]
 tab3 
