@@ -141,12 +141,13 @@ print(xtable(AgreementTab), include.rownames=TRUE, booktabs = TRUE)
 
 #In stargazer
 agree <- as.data.frame(xtable(AgreementTab))
-stargazer(agree, type = "latex", summary = FALSE, rownames = TRUE, title = "PCR detection agreement by specimen type")
+stargazer(agree, type = "latex", summary = FALSE, rownames = TRUE, 
+          title = "PCR detection agreement by specimen type")
 
 #In xtable
 agree <- as.data.frame(xtable(AgreementTab))
-print(xtable(agree, caption = "PCR detection agreement by specimen type"), caption.placement = getOption("xtable.caption.placement",
-                                    "top"))
+print(xtable(agree, caption = "PCR detection agreement by specimen type"), 
+      caption.placement = getOption("xtable.caption.placement", "top"))
 
 #STOOL REPLICATE 1 VS STOOL REPLICATE 2
 AgreementStool  <- addmargins(table(d$stool1_pos, d$stool2_pos, dnn=c("Bulk Stool Sample 1","Bulk Stool Sample 2")))
