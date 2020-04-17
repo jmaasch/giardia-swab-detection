@@ -1,7 +1,7 @@
 # Rectal swabs as an alternative sample collection method to bulk stool for the real-time PCR detection of *Giardia duodenalis* 
 
 <p align="center">   
-<img src="https://github.com/jmaasch/giardia-swab-detection/blob/master/figures/figures_low-fi/scatter_grid_small.jpg" align="middle"/>
+<img src="https://github.com/jmaasch/giardia-swab-detection/blob/master/figures/figures_resubmit/AJTMH_R1_figure2_cq_quartile_small.jpg" align="middle"/>
 </p>
 
 > *Above:* Real-time PCR Cq value correlations by specimen type (A) and sample replicate group (B & C).
