@@ -1,7 +1,7 @@
 # Rectal swabs as an alternative sample collection method to bulk stool for the real-time PCR detection of *Giardia duodenalis* 
 
 <p align="center">   
-<img src="https://github.com/jmaasch/giardia-swab-detection/blob/master/figures/figures_resubmit/AJTMH_R1_figure2_cq_quartile_small.jpg" width=400 align="middle"/>
+<img src="https://github.com/jmaasch/giardia-swab-detection/blob/master/figures/figures_resubmit/AJTMH_R1_figure2_cq_quartile_small.jpg" width=700 align="middle"/>
 </p>
 
 > *Above:* Real-time PCR sensitivity of rectal swab specimens by corresponding bulk stool Cq value. Rectal swab sensitivity varies when samples are binned by the Cq quartile of the participant’s corresponding Giardia-positive bulk stool sample (N = 55).
