@@ -1,7 +1,7 @@
 # Rectal swabs as an alternative sample collection method to bulk stool for the real-time PCR detection of *Giardia duodenalis* 
 
 <p align="center">   
-<img src="https://github.com/jmaasch/giardia-swab-detection/blob/master/figures/figures_resubmit/AJTMH_R1_figure2_cq_quartile_small.jpg" width=100 align="middle"/>
+<img src="https://github.com/jmaasch/giardia-swab-detection/blob/master/figures/figures_resubmit/AJTMH_R1_figure2_cq_quartile_small.jpg" width=400 align="middle"/>
 </p>
 
 > *Above:* Real-time PCR sensitivity of rectal swab specimens by corresponding bulk stool Cq value. Rectal swab sensitivity varies when samples are binned by the Cq quartile of the participant’s corresponding Giardia-positive bulk stool sample (N = 55).
@@ -23,7 +23,7 @@
 5. Division of Infectious Diseases and Geographic Medicine, Department of Medicine, Stanford University School of Medicine, Stanford, CA, USA
 
 <p align="center">   
-<img src="https://github.com/jmaasch/giardia-swab-detection/blob/master/figures/figures_resubmit/AJTMH_R1_figure1_scatter_grid_horizontal_small.jpg" align="middle"/>
+<img src="https://github.com/jmaasch/giardia-swab-detection/blob/master/figures/figures_resubmit/AJTMH_R1_figure1_scatter_grid_horizontal_small.jpg" />
 </p>
 
 > *Above:* Real-time PCR Cq value correlations by specimen type (A) and sample replicate group (B & C). Plots depict Cq value correlations for paired bulk stool and rectal swab specimens (plot A, N = 51), bulk stool inter-replicate Cq values (plot B, N = 31), and rectal swab inter-replicate Cq values (plot C, N = 22).
