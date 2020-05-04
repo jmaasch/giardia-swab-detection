@@ -9,6 +9,8 @@
 
 ## Project outline
 
+**Resulting publications:** A paper resulting from this project has been accepted for publication by the American Journal of Tropical Medicine & Hygiene (in press as of May 2020).
+
 **Project goals:**
 * To develop a protocol for DNA isolation from rectal swabs for qPCR detection of enteric parasites.
 * To assess the comparative validity and reproducibility of qPCR diagnosis of *Giardia duodenalis* by DNA isolated from paired rectal swab and bulk stool samples collected in rural Boboye Department, Dosso Region, Niger.
