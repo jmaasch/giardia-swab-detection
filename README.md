@@ -9,7 +9,7 @@
 
 ## Project outline
 
-**Resulting publications:** A paper resulting from this project has been accepted for publication by the American Journal of Tropical Medicine & Hygiene (in press as of May 2020).
+**Resulting publications:** A paper resulting from this project has been accepted for publication by the American Journal of Tropical Medicine & Hygiene (in press as of May 2020). Results were presented at the [American Society of Tropical Medicine & Hygiene](https://www.researchgate.net/publication/337447361_Rectal_swabs_for_molecular_detection_of_Giardia_duodenalis) 68th Annual Meeting (November 2019, National Harbor, Maryland USA) in a poster titled *Rectal swabs for molecular detection of Giardia duodenalis.*
 
 **Project goals:**
 * To develop a protocol for DNA isolation from rectal swabs for qPCR detection of enteric parasites.
