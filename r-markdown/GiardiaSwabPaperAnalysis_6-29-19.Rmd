@@ -41,10 +41,10 @@ BrBG2 <- c("#003c30", "#35978f")
 
 #Working directorories (set one to comment depending on who is working on the file)
 #Kristen: 
-#setwd("~/Dropbox/_Papers/Rectal swab STH/Analysis/")
+#redacted
 
 #Jacqueline
-setwd("/Users/razel/Dropbox/Rectal swab STH/Analysis/")
+#redacted
 
 ```
 
